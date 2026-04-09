@@ -1,0 +1,41 @@
+{
+  "name": "toolkit-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "tsx src/index.ts",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be",
+  "devDependencies": {
+    "@tsconfig/node18": "^18.2.6",
+    "@types/bn.js": "^5.2.0",
+    "@types/elliptic": "^6.4.18",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.3",
+    "@grpc/proto-loader": "^0.8.0",
+    "bn.js": "^5.2.3",
+    "dbus-next": "^0.10.2",
+    "elliptic": "^6.6.1",
+    "express": "^5.2.1",
+    "fast-xml-parser": "^5.5.5",
+    "pino": "^10.3.1",
+    "pino-pretty": "^13.1.3",
+    "serialport": "^13.0.0",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
+  },
+  "engines": {
+    "node": ">= 18"
+  }
+}

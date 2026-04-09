@@ -1,0 +1,6 @@
+onlyBuiltDependencies:
+  - '@serialport/bindings-cpp'
+  - esbuild
+  - node-bluetooth
+  - protobufjs
+  - usocket
