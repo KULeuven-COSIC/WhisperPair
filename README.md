@@ -1,6 +1,30 @@
-# WhisperPair Testing Harness
+# WhisperPair: Testing Harness for Google Fast Pair
 
-This repository contains the artefact for the paper "One Tap to Hijack Them All: A Security Analysis of the Google Fast Pair Protocol", which will appear at IEEE S&P 2026.
+[![Venue](https://img.shields.io/badge/IEEE%20S%26P-2026-blue)]()
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC--BY--4.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+[![OS](https://img.shields.io/badge/Server-Linux%20%28BlueZ%29-green)]()
+[![Hardware](https://img.shields.io/badge/Requires-Bluetooth%20Adapter-orange)]()
+[![Website](https://img.shields.io/badge/Website-whisperpair.eu-black)](https://whisperpair.eu)
+> A practical tool to test whether Google Fast Pair devices are vulnerable to pairing, account-binding, and protocol-level attacks.
+
+This repository provides the WhisperPair testing harness, a tool for evaluating the security of Google Fast Pair devices. It is designed for both researchers and practitioners to reproduce our findings and to test their own devices.
+
+For an overview of the project, affected devices, and additional context, please visit [our website](https://whisperpair.eu).
+
+This repository also contains the artefact for the paper `One Tap to Hijack Them All: A Security Analysis of the Google Fast Pair Protocol`, which will appear at IEEE S&P 2026.
+
+## Citation
+
+Full version of the paper can be found [here](https://cosicdatabase.esat.kuleuven.be/backend/publications/files/conferencepaper/4189). If you find this work useful, please consider citing the paper:
+
+```bibtex
+@inproceedings{whisperpair2026,
+  title     = {One Tap to Hijack Them All: A Security Analysis of the Google Fast Pair Protocol},
+  author    = {Duttagupta, Sayon and Wyns, Seppe and Antonijević, Nikola and Singelée, Dave and Preneel, Bart},
+  booktitle = {2026 IEEE Symposium on Security and Privacy (S\&P)},
+  year      = {2026},
+}
+```
 
 ## Disclaimer and Responsible Use
 
@@ -249,7 +273,7 @@ This happens very rarely, and the `./start.sh` script should automatically resta
 | Jabra          | Elite 8 Active     | 3778746    | Yes                    | 32.01                | No                          | No                                   |
 | JBL            | Tune Beam          | 3293323    | Yes                    | 6.91                 | Only in same session        | No                                   |
 | Marshall       | MOTIF II A.N.C.    | 15473012   | Yes                    | 9.49                 | Yes                         | No                                   |
-| Nothing        | Ear (a)            | 8625818    | Yss                    | 38.80                | Only in same session        | No                                   |
+| Nothing        | Ear (a)            | 8625818    | Yes                    | 38.80                | Only in same session        | No                                   |
 | OnePlus        | Nord Buds Pro 3    | 13394952   | Yes                    | 10.19                | Only in same session        | No                                   |
 | HP             | Poly VFree 60      | 15984097   | No                     |                      | No                          | No                                   |
 | Redmi          | Buds 5 Pro         | 11155060   | Yes                    | 8.32                 | Only in same session        | No                                   |
@@ -271,3 +295,7 @@ This happens very rarely, and the `./start.sh` script should automatically resta
 | Logitech       | Wonderboom 4       | 11575855   | Yes                    | 11.96                | Only in same session        | No                                   |
 
 If you're looking for Fast Pair-compatible devices, you can use the [Model IDs list](./model_ids.csv) to view all Fast Pair-certified devices.
+
+## Acknowledgments
+
+This work was supported by the Flemish Government through the Cybersecurity Research Program with grant number VOEWICS02.
