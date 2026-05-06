@@ -1,9 +1,9 @@
 # WhisperPair: Testing Harness for Google Fast Pair
 
-[![Venue](https://img.shields.io/badge/IEEE%20S%26P-2026-blue)]()
+[![Venue](https://img.shields.io/badge/IEEE%20S%26P-2026-blue)](https://sp2026.ieee-security.org/)
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC--BY--4.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
-[![OS](https://img.shields.io/badge/Server-Linux%20%28BlueZ%29-green)]()
-[![Hardware](https://img.shields.io/badge/Requires-Bluetooth%20Adapter-orange)]()
+![OS](https://img.shields.io/badge/Server-Linux%20%28BlueZ%29-green)
+![Hardware](https://img.shields.io/badge/Requires-Bluetooth%20Adapter-orange)
 [![Website](https://img.shields.io/badge/Website-whisperpair.eu-black)](https://whisperpair.eu)
 > A practical tool to test whether Google Fast Pair devices are vulnerable to pairing, account-binding, and protocol-level attacks.
 
