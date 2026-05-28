@@ -11,7 +11,7 @@ This repository provides the WhisperPair testing harness, a tool for evaluating 
 
 For an overview of the project, affected devices, and additional context, please visit [our website](https://whisperpair.eu).
 
-This repository also contains the artefact for the paper `One Tap to Hijack Them All: A Security Analysis of the Google Fast Pair Protocol`, which will appear at IEEE S&P 2026.
+This repository also contains the artefact for the paper `One Tap to Hijack Them All: A Security Analysis of the Google Fast Pair Protocol`, which appeared at [IEEE S&P 2026](https://sp2026.ieee-security.org/).
 
 ## Citation
 
