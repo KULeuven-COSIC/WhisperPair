@@ -1,6 +1,13 @@
 onlyBuiltDependencies:
-  - '@serialport/bindings-cpp'
+  - '@stoprocent/bluetooth-hci-socket'
   - esbuild
-  - node-bluetooth
   - protobufjs
+  - usb
   - usocket
+
+# dbus-next pins usocket@^0.3.0, which fails to build against Node 24+ (old V8
+# API). usocket@1.0.3 is API-compatible and compiles cleanly, so force it.
+# usocket's native binding (via nan) only builds on Node 26 with nan >= 2.28.0.
+overrides:
+  usocket: 1.0.3
+  nan: ^2.28.0

@@ -93,12 +93,13 @@ corepack enable
 
 #### Additional tooling
 
-The harness also requires `hcitool` and `l2ping`.  
-Depending on your Linux distribution, `hcitool` might not be available. You might have to install `bluez-deprecated-tools`.  
-It remains preinstalled on the latest Raspberry Pi OS Lite version at the time of writing. (1 Oct 2025)
+The harness talks to the Bluetooth controller natively and no longer needs the deprecated
+`hcitool`, `hciconfig`, `sdptool`, `rfcomm`, or `l2ping` tools. Raw HCI commands are sent over a
+native HCI socket (the BR/EDR reachability check that replaced `l2ping` is an HCI Remote Name
+Request), and the Audio Switch extension uses BlueZ's D-Bus Profile API for RFCOMM/SDP, so a
+standard `bluez` install is enough. Adapter resets use `btmgmt` (part of `bluez-utils`).
 
-If the Bluetooth adapter is not powered on, the server will attempt to use `rfkill` to turn it on.  
-Testing the Audio Switch extension requires `rfcomm`.
+If the Bluetooth adapter is not powered on, the server will attempt to use `rfkill` to turn it on.
 
 > [!NOTE]
 > The server will check for the availability of these tools on startup.

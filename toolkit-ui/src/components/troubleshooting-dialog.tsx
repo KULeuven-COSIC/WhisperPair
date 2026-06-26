@@ -79,9 +79,8 @@ export default function TroubleshootingOptions() {
           </AlertDialogDescription>
 
           <div className="font-mono border-input dark:bg-input/30 field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 shadow-xs outline-none text-sm">
-            <div>hciconfig hci0 down</div>
-            <div>hciconfig hci0 reset</div>
-            <div>hciconfig hci0 up</div>
+            <div>btmgmt --index 0 power off</div>
+            <div>btmgmt --index 0 power on</div>
             <div>systemctl restart bluetooth</div>
           </div>
 

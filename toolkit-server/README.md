@@ -28,7 +28,7 @@ sudo apt install bluez bluez-utils
 ```
 
 > [!NOTE]
-> **Legacy Tools:** The harness also requires `hcitool` and `l2ping`. Depending on your Linux distribution, `hcitool` might not be available. You might have to install `bluez-deprecated-tools`. It remains preinstalled on the latest Raspberry Pi OS Lite version at the time of writing. (1 Oct 2025)
+> The harness no longer depends on the deprecated `hcitool`, `hciconfig`, `sdptool`, `rfcomm`, or `l2ping` tools. Raw HCI commands (including the BR/EDR reachability check that replaced `l2ping`) are sent over a native HCI socket (`@stoprocent/bluetooth-hci-socket`), and the RFCOMM/SDP path uses BlueZ's D-Bus Profile API, so a standard `bluez` install is sufficient. Adapter resets use `btmgmt` (shipped with `bluez-utils`).
 
 4. Ensure Bluetooth is enabled:
 
