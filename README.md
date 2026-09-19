@@ -11,29 +11,32 @@ This repository provides the WhisperPair testing harness, a tool for evaluating 
 
 For an overview of the project, affected devices, and additional context, please visit [our website](https://whisperpair.eu).
 
-This repository also contains the artefact for the paper `One Tap to Hijack Them All: A Security Analysis of the Google Fast Pair Protocol`, which appeared at [IEEE S&P 2026](https://sp2026.ieee-security.org/).
+This repository also contains the artefact for the paper **One Tap to Hijack Them All: A Security Analysis of the Google Fast Pair Protocol**, which appeared at `IEEE S&P (Oakland) 2026`.
 
 ## Citation
 
-Full version of the paper can be found [here](https://cosicdatabase.esat.kuleuven.be/backend/publications/files/conferencepaper/4189). If you find this work useful, please consider citing the paper:
+The full version of the paper can be found [here](https://cosicdatabase.esat.kuleuven.be/backend/publications/files/conferencepaper/4189). If you find this work useful, please consider citing the paper:
 
 ```bibtex
-@inproceedings{whisperpair2026,
-  title     = {One Tap to Hijack Them All: A Security Analysis of the Google Fast Pair Protocol},
-  author    = {Duttagupta, Sayon and Wyns, Seppe and Antonijević, Nikola and Singelée, Dave and Preneel, Bart},
-  booktitle = {2026 IEEE Symposium on Security and Privacy (S\&P)},
-  year      = {2026},
+@inproceedings{duttagupta2026whisperpair,
+    author    = {Duttagupta, Sayon and Wyns, Seppe and Antonijevi{\'c}, Nikola and Singel{\'e}e, Dave and Preneel, Bart},
+    title     = {{One Tap to Hijack Them All: A Security Analysis of the Google Fast Pair Protocol}},
+    booktitle = {2026 IEEE Symposium on Security and Privacy (S\&P)},
+    doi       = {10.1109/SP63933.2026.00210},
+    pages     = {1--18},
+    year      = {2026}
 }
+
 ```
 
 ## Disclaimer and Responsible Use
 
-The materials are provided to enable reproducibility of our evaluation and to assist researchers in performing defensive testing. Use these materials only for authorized security research and defensive verification on devices you own or have explicit permission to test. As the code in this repository demonstrates vulnerabilities in consumer accessories, do not use it to attack third-party devices without clear written permission. The authors performed all experiments on devices owned by the project team or donated with informed consent. By running these tools you agree to use them only for defensive research, reproduction of our results, or device self-testing.
+The materials are provided to enable reproducibility of our evaluation and to assist researchers in performing defensive testing. Use these materials only for authorised security research and defensive verification on devices you own or have explicit permission to test. As the code in this repository demonstrates vulnerabilities in consumer accessories, do not use it to attack third-party devices without clear written permission. The authors performed all experiments on devices owned by the project team or donated with informed consent. By running these tools, you agree to use them only for defensive research, reproduction of our results, or device self-testing.
 
 ## Setup and Requirements
 
 > [!NOTE]
-> **Summary:** ensure that you have a Linux machine with a Bluetooth adapter, and that Node.js (LTS) and pnpm are installed.  
+> **Summary:** Ensure that you have a Linux machine with a Bluetooth adapter, and that Node.js (LTS) and pnpm are installed.  
 > You can run both the UI and server on the same machine by running `bash build.sh` followed by `bash start.sh`.
 
 This repository contains a testing harness for evaluating whether a target device correctly implements certain security requirements of Google Fast Pair.
