@@ -79,7 +79,7 @@ If port `3000` is not available, an alternative port will be selected and shown 
 The UI will attempt to connect to the server on startup.  
 When the connection is successful, a "Connected to the server" message will be displayed in the bottom right corner of the screen.
 
-Evaluating whether a device is vulnerable requires three steps: discovering the device, settings its Model ID, and running an attack.
+Evaluating whether a device is vulnerable requires three steps: discovering the device, setting its Model ID, and running an attack.
 
 ### 1. Discovering devices
 
