@@ -203,7 +203,7 @@ If you are certain that the Model ID you entered exists, please wait a few minut
 The UI will attempt to connect to the server on startup.  
 When the connection is successful, a "Connected to the server" message will be displayed in the bottom right corner of the screen.
 
-Evaluating whether a device is vulnerable requires three steps: discovering the device, settings its Model ID, and running an attack.
+Evaluating whether a device is vulnerable requires three steps: discovering the device, setting its Model ID, and running an attack.
 
 #### 1. Discovering devices
 
