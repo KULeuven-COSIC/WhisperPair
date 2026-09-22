@@ -5,6 +5,7 @@ import { getDeviceInfo } from "./model-id-resolver";
 import dbus, { DBusError } from "dbus-next";
 import constants from "./constants";
 import protocol from "./protocol";
+import hci from "./hci";
 import utils from "./utils";
 import {
   LinuxDeviceManager,
@@ -85,9 +86,9 @@ abstract class AbstractFastPairService {
         try {
           log("Pinging device");
           try {
-            await utils.exec(`l2ping -c 1 ${addr}`);
+            await hci.pingBREDR(addr);
           } catch {
-            log("l2ping failed or is not available, waiting 2s...");
+            log("Device did not respond to reachability check, waiting 2s...");
             await new Promise((resolve) => setTimeout(resolve, 2000));
           }
 
@@ -124,7 +125,7 @@ abstract class AbstractFastPairService {
           log("Confirming pairing");
           await session.confirm(signal);
 
-          const [_, data] = await this.manager.waitForDevice(addr, signal);
+          const [bredrPath, data] = await this.manager.waitForDevice(addr, signal);
 
           const d = data["org.bluez.Device1"];
           const paired = d.Paired?.value;
@@ -160,7 +161,7 @@ abstract class AbstractFastPairService {
           // switch back to previous device if requested
           if (options.switchBack) {
             log("Opening RFCOMM connection...");
-            const session = await MessageStreamSession.open(addr, ACCOUNT_KEY);
+            const session = await MessageStreamSession.open(bredrPath, addr, ACCOUNT_KEY);
 
             try {
               log("Waiting for Audio Switch initialization...");

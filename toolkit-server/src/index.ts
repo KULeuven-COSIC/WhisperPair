@@ -66,9 +66,8 @@ async function main() {
           await manager.reset();
         } catch {}
 
-        await exec(`hciconfig hci0 down`);
-        await exec(`hciconfig hci0 reset`);
-        await exec(`hciconfig hci0 up`);
+        await exec(`btmgmt --index 0 power off`);
+        await exec(`btmgmt --index 0 power on`);
         await exec(`systemctl restart bluetooth`);
 
         while (true) {
@@ -316,12 +315,9 @@ process.on("unhandledRejection", onError);
 
 // required tools
 const requirements: [string, string][] = [
-  ["hcitool", "Connecting to a device or performing attacks may not be possible."],
-  ["l2ping", "Completing a pairing may not be reliable."],
   ["rfkill", "If the Bluetooth adapter is turned off, the server will fail to start."],
-  ["hciconfig", "Automatically resetting the Bluetooth adapter may not work."],
+  ["btmgmt", "Automatically resetting the Bluetooth adapter may not work."],
   ["systemctl", "Automatically resetting the Bluetooth adapter may not work."],
-  ["rfcomm", "Switching back using the Audio Switch extension may not work."],
 ];
 
 function checkTools() {

@@ -1,141 +1,156 @@
-import { exec, spawn } from "node:child_process";
-import { XMLParser } from "fast-xml-parser";
+import dbus, { Variant } from "dbus-next";
+import { Socket } from "node:net";
 
-/** An RFCOMM socket. */
-interface RFCOMMSocket {
-  id: string;
-  address: string;
-  channel: number;
-  status: string;
+const { Interface } = dbus.interface;
+
+/**
+ * The Fast Pair Message Stream RFCOMM service UUID. BlueZ uses it to discover
+ * the RFCOMM channel via SDP, replacing the deprecated `sdptool`.
+ */
+const FAST_PAIR_RFCOMM_UUID = "df21fe2c-2515-4fdb-8886-f12c4d67927c";
+
+/** The D-Bus object path our profile is exported on. */
+const PROFILE_PATH = "/whisperpair/fastpair";
+
+/** A connection waiting for BlueZ to hand us an RFCOMM file descriptor. */
+interface PendingConnection {
+  resolve: (socket: Socket) => void;
+  reject: (error: Error) => void;
 }
 
-/** Gets all the open RFCOMM sockets. */
-async function getSockets(): Promise<RFCOMMSocket[]> {
-  const rfcommOutput = await new Promise<string>((resolve, reject) => {
-    return exec("rfcomm", (error, stdout, stderr) => {
-      if (error) return reject(error);
-      resolve(stdout);
-    });
-  });
+/** Connections awaiting `NewConnection`, keyed by device object path. */
+const pending = new Map<string, PendingConnection>();
 
-  const regex = /(rfcomm\d+): (.+) channel (\d+) (.+)\n?/gm;
-  const matches = rfcommOutput.matchAll(regex);
-
-  return Array.from(matches).map((match) => ({
-    id: match[1]!,
-    address: match[2]!,
-    channel: +match[3]!,
-    status: match[4]?.trim()!,
-  }));
-}
-
-/** Closes an RFCOMM channel. */
-async function close(id: string) {
-  await new Promise<string>((resolve, reject) => {
-    return exec(`rfcomm release /dev/${id}`, (error, stdout, stderr) => {
-      if (error) return reject(error);
-      if (stderr) return reject(new Error(stderr));
-      resolve(stdout);
-    });
-  });
-}
-
-/** Gets an avalable RFCOMM socket id. */
-function getAvailableSocketId(sockets: RFCOMMSocket[]) {
-  const ids = new Set(sockets.map(({ id }) => +id.slice(6)));
-
-  for (let i = 0; i < 100; i++) {
-    if (ids.has(i)) continue;
-    return i;
+/**
+ * An `org.bluez.Profile1` implementation. BlueZ calls `NewConnection` with a
+ * connected RFCOMM socket file descriptor once `ConnectProfile` succeeds — this
+ * replaces the deprecated `rfcomm bind` and `/dev/rfcommN` serial devices.
+ */
+class FastPairProfile extends Interface {
+  constructor() {
+    super("org.bluez.Profile1");
   }
 
-  throw new Error("Could not find an available RFCOMM socket.");
-}
+  Release() {}
 
-/** Opens an RFCOMM socket to an address, given a channel number. */
-export async function open(address: string, channel: number) {
-  let sockets = await getSockets();
+  NewConnection(device: string, fd: number, _properties: Record<string, Variant>) {
+    const waiter = pending.get(device);
 
-  const existingSocket = sockets.find(
-    (socket) => socket.address == address && socket.channel == channel,
-  );
+    // nobody is waiting for this device; close the fd so it isn't leaked
+    if (!waiter) {
+      try {
+        new Socket({ fd }).destroy();
+      } catch {}
+      return;
+    }
 
-  if (existingSocket) {
-    await close(existingSocket.id);
-    sockets = await getSockets();
+    pending.delete(device);
+    waiter.resolve(new Socket({ fd, readable: true, writable: true }));
   }
 
-  // open a new socket
-  const availableSocketId = getAvailableSocketId(sockets);
+  RequestDisconnection(_device: string) {}
+}
 
-  await new Promise<void>((resolve, reject) => {
-    exec(
-      `rfcomm bind /dev/rfcomm${availableSocketId} ${address} ${channel}`,
-      (error, _, stderr) => {
-        if (error) return reject(error);
-        if (stderr) return reject(new Error(stderr));
-        resolve();
+FastPairProfile.configureMembers({
+  methods: {
+    Release: { inSignature: "", outSignature: "" },
+    NewConnection: { inSignature: "oha{sv}", outSignature: "" },
+    RequestDisconnection: { inSignature: "o", outSignature: "" },
+  },
+});
+
+/**
+ * A dedicated system bus with UNIX file-descriptor passing enabled, used to
+ * receive the RFCOMM socket from BlueZ.
+ */
+let bus: dbus.MessageBus | undefined;
+let registerPromise: Promise<void> | undefined;
+
+function getBus() {
+  if (!bus) bus = dbus.systemBus({ negotiateUnixFd: true });
+  return bus;
+}
+
+/** Exports and registers the Fast Pair profile with BlueZ exactly once. */
+function ensureRegistered() {
+  if (registerPromise) return registerPromise;
+
+  registerPromise = (async () => {
+    const bus = getBus();
+    bus.export(PROFILE_PATH, new FastPairProfile());
+
+    const managerObject = await bus.getProxyObject("org.bluez", "/org/bluez");
+    const profileManager = managerObject.getInterface("org.bluez.ProfileManager1");
+
+    const options = {
+      Role: new Variant("s", "client"),
+      RequireAuthentication: new Variant("b", false),
+      RequireAuthorization: new Variant("b", false),
+    };
+
+    try {
+      await profileManager.RegisterProfile!(PROFILE_PATH, FAST_PAIR_RFCOMM_UUID, options);
+    } catch (e) {
+      // the profile may already be registered (e.g. after a hot reload)
+      if (!(e instanceof Error) || !e.message.includes("AlreadyExists")) {
+        registerPromise = undefined;
+        throw e;
+      }
+    }
+  })();
+
+  return registerPromise;
+}
+
+/**
+ * Opens a Fast Pair RFCOMM connection to a device using BlueZ's Profile API.
+ * BlueZ performs SDP discovery for the Fast Pair UUID, connects the RFCOMM
+ * channel, and hands back a socket file descriptor.
+ * @param devicePath The BlueZ D-Bus object path of the (BR/EDR) device.
+ * @returns A connected socket for the RFCOMM channel.
+ */
+export async function connect(devicePath: string, timeoutMs = 15000): Promise<Socket> {
+  const bus = getBus();
+  await ensureRegistered();
+
+  const deviceObject = await bus.getProxyObject("org.bluez", devicePath);
+  const device = deviceObject.getInterface("org.bluez.Device1");
+
+  const socketPromise = new Promise<Socket>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      pending.delete(devicePath);
+      reject(new Error("Timed out waiting for the RFCOMM connection."));
+    }, timeoutMs);
+
+    pending.set(devicePath, {
+      resolve: (socket) => {
+        clearTimeout(timer);
+        resolve(socket);
       },
-    );
-  });
-
-  return `rfcomm${availableSocketId}`;
-}
-
-/** Attempts to find a Fast Pair RFCOMM channel. */
-export function findFastPairRFCOMMChannel(address: string) {
-  return new Promise<number>((resolve, reject) => {
-    const parser = new XMLParser({
-      ignoreAttributes: false,
+      reject: (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
     });
-    const sdptool = spawn("stdbuf", ["-oL", `sdptool`, `records`, `--xml`, address]);
-    let buffer: string = "";
-
-    function onRecord(record: string) {
-      const obj = parser.parse(record);
-
-      const attribute = obj.record.attribute;
-
-      const uuid = attribute.find((attribute: any) => attribute["@_id"] == "0x0001").sequence.uuid[
-        "@_value"
-      ];
-
-      if (uuid === "df21fe2c-2515-4fdb-8886-f12c4d67927c") {
-        // is fast pair record
-        const protocolDescriptorList = attribute.find(
-          (attribute: any) => attribute["@_id"] == "0x0004",
-        );
-        const rfcommRecord = protocolDescriptorList.sequence.sequence.find(
-          (attribute: any) => attribute.uuid["@_value"] == "0x0003",
-        ).uint8["@_value"];
-        const channel = Number(rfcommRecord);
-
-        sdptool.stdout.off("data", onData);
-        sdptool.kill();
-
-        resolve(channel);
-      }
-    }
-
-    function onData(chunk: Buffer) {
-      const string = chunk.toString();
-      buffer += string;
-
-      for (let i = buffer.indexOf("</record>"); i != -1; i = buffer.indexOf("</record>")) {
-        const record = buffer.slice(0, i + 9);
-        buffer = buffer.slice(i + 9);
-        onRecord(record);
-      }
-    }
-
-    sdptool.stdout.on("data", onData);
-    sdptool.on("exit", () => reject(new Error("Did not find RFCOMM channel in sdptool output.")));
   });
+
+  try {
+    await device.ConnectProfile!(FAST_PAIR_RFCOMM_UUID);
+  } catch (e) {
+    // BlueZ delivers the fd via NewConnection before ConnectProfile returns, so
+    // only surface the error if we are still waiting for the connection.
+    const waiter = pending.get(devicePath);
+    if (waiter) {
+      pending.delete(devicePath);
+      waiter.reject(e instanceof Error ? e : new Error(String(e)));
+    }
+  }
+
+  return socketPromise;
 }
 
 const rfcomm = {
-  findFastPairRFCOMMChannel,
-  open,
+  connect,
 };
 
 export default rfcomm;

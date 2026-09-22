@@ -51,6 +51,7 @@ export const knownModelIds = {
   "JBL Tune beam": 3293323,
   "MOTIF II A.N.C.": 15473012,
   "Nothing ear(a)": 8625818,
+  "Nothing Headphone (1)": 2977754,
   "OnePlus Nord Buds Pro 3": 13394952,
   "Poly VFree 60 Series": 15984097,
   "Redmi Buds 5 Pro": 11155060,

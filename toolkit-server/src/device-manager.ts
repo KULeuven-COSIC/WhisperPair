@@ -6,7 +6,7 @@ import { promisify } from "util";
 import { FastPairService } from "./fast-pair-service";
 import { DeviceMap } from "./device-map.js";
 import constants from "./constants";
-import hcitool from "./hcitool";
+import hci from "./hci";
 import logger from "./logger";
 
 import companyIDs from "./known-identifiers/company_ids.json";
@@ -371,61 +371,77 @@ export class LinuxDevice extends AbstractDevice {
     return device;
   }
 
+  /** Creates the LE connection at the controller level via raw HCI (attack timing). */
+  private async createRawConnection() {
+    try {
+      if (this.manager.extendedLEConnectionSupport) {
+        await hci.createExtendedLEConnection(this.address);
+      } else {
+        await hci.createLEConnection(this.address);
+      }
+    } catch (e) {
+      // if that fails, try the other variant
+      try {
+        if (this.manager.extendedLEConnectionSupport) {
+          await hci.createLEConnection(this.address);
+        } else {
+          await hci.createExtendedLEConnection(this.address);
+        }
+      } catch (e) {
+        logger.warn(e, "Raw HCI LE connection failed; relying on BlueZ to connect");
+      }
+    }
+  }
+
   async connect(signal?: AbortSignal): Promise<void> {
     return await new Promise<void>((resolve, reject) => {
       const properties = this.properties;
 
+      let settled = false;
+      const settle = (action: () => void) => {
+        if (settled) return;
+        settled = true;
+        properties.off("PropertiesChanged", onPropertiesChanged);
+        action();
+      };
+
       // detect when services have been resolved
-      async function onPropertiesChanged(iface: any, changed: any, invalidated: any) {
+      function onPropertiesChanged(iface: any, changed: any, invalidated: any) {
         try {
-          if (changed.ServicesResolved) {
-            properties.off("PropertiesChanged", onPropertiesChanged);
-            resolve();
-          }
+          if (changed.ServicesResolved?.value) settle(resolve);
         } catch (e) {
-          reject(e);
+          settle(() => reject(e));
         }
       }
 
-      signal?.addEventListener("abort", () => {
-        properties.off("PropertiesChanged", onPropertiesChanged);
-        reject(signal.reason);
-      });
+      signal?.addEventListener("abort", () => settle(() => reject(signal.reason)));
 
       properties.Get!(BLUEZ_DEVICE_NAME, "ServicesResolved")
         .then(async (result: any) => {
-          if (!result.value) properties.on("PropertiesChanged", onPropertiesChanged);
+          // already connected and browsed
+          if (result.value) return settle(resolve);
 
-          // try based on capabilities
+          properties.on("PropertiesChanged", onPropertiesChanged);
+
+          // 1. establish the link at the controller level (preserves attack timing)
+          await this.createRawConnection();
+          if (signal?.aborted) return settle(() => reject(signal.reason));
+
+          // 2. ask BlueZ to connect. On stacks that already adopted the raw
+          //    connection this resolves instantly; on stacks that ignore
+          //    out-of-band HCI connections (newer kernels/BlueZ) this attaches
+          //    GATT over the existing link and triggers service discovery.
           try {
-            if (this.manager.extendedLEConnectionSupport) {
-              await hcitool.createExtendedLEConnection(this.address);
-            } else {
-              await hcitool.createLEConnection(this.address);
-            }
+            const device = this.proxy.getInterface(BLUEZ_DEVICE_NAME);
+            await device.Connect!();
+            settle(resolve);
           } catch (e) {
-            // if that fails, try the other one
-
-            if (signal?.aborted) return reject(signal.reason);
-
-            try {
-              if (this.manager.extendedLEConnectionSupport) {
-                await hcitool.createLEConnection(this.address);
-              } else {
-                await hcitool.createExtendedLEConnection(this.address);
-              }
-            } catch (e) {
-              reject(
-                new Error(
-                  "Could not open BLE connection to device. If the problem persists, try resetting the BLE adapter using the troubleshooting menu.",
-                ),
-              );
-            }
+            // the ServicesResolved listener may still fire; otherwise the
+            // caller's timeout surfaces the failure
+            logger.warn(e, "BlueZ Connect() failed or device was already connected");
           }
-
-          if (result.value) resolve();
         })
-        .catch((e: any) => reject(e));
+        .catch((e: any) => settle(() => reject(e)));
     });
   }
 
@@ -491,7 +507,7 @@ export class LinuxDeviceManager extends AbstractDeviceManager<LinuxDevice> {
 
   static async create() {
     try {
-      const extendedLEConnectionSupport = await hcitool.determineExtendedCreateConnectionSupport();
+      const extendedLEConnectionSupport = await hci.determineExtendedCreateConnectionSupport();
 
       const bus = dbus.systemBus();
       const hciProxy = await bus.getProxyObject("org.bluez", "/org/bluez/hci0");
